@@ -67,6 +67,8 @@
     .btn-green:hover { background: #219150; }
     .btn-orange { background: #e67e22; }
     .btn-orange:hover { background: #d35400; }
+    .btn-gray { background: #7f8c8d; }
+    .btn-gray:hover { background: #95a5a6; }
 
     #player-list {
       margin: 15px 0; text-align: left; background: #2a2a2a; padding: 12px; border-radius: 8px; max-height: 140px; overflow-y: auto; font-size: 0.95rem;
@@ -160,6 +162,7 @@
     <div id="result-details"></div>
     <button id="btn-next-round" class="btn-green" style="display:none;" onclick="nextRoundHost()">Próxima Rodada</button>
     <button id="btn-restart-game" class="btn-orange" style="display:none;" onclick="restartGameHost()">🔄 Iniciar Nova Partida (Novos Locais)</button>
+    <button id="btn-home-screen" class="btn-gray" style="display:none; margin-top:8px;" onclick="location.reload()">🏠 Voltar à Tela Inicial</button>
     <p id="waiting-host-msg" style="font-size:0.85rem; color:#aaa; display:none;">Aguardando o criador da sala avançar...</p>
   </div>
 
@@ -182,26 +185,42 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // Banco de Locais Validados (100% Vias Navegáveis do Street View)
+    // Banco Expandido de Vias e Rodovias 100% Navegáveis do Street View
     const verifiedLocations = [
-      { lat: -22.951916, lng: -43.210487 }, // Rio de Janeiro, Brasil
-      { lat: -29.982145, lng: -52.381230 }, // RS, Brasil
-      { lat: 48.858370, lng: 2.294481 },    // Paris, França
-      { lat: 35.658581, lng: 139.745438 },  // Tóquio, Japão
-      { lat: -38.416098, lng: -63.616672 }, // Argentina
-      { lat: 41.890210, lng: 12.492231 },   // Roma, Itália
-      { lat: 51.500729, lng: -0.124625 },   // Londres, Reino Unido
-      { lat: -33.856784, lng: 151.215297 }, // Sydney, Austrália
-      { lat: 37.819928, lng: -122.478255 }, // São Francisco, EUA
-      { lat: 52.516275, lng: 13.377704 },  // Berlim, Alemanha
-      { lat: 62.000010, lng: 15.000010 },   // Suécia
-      { lat: -31.900010, lng: 20.200010 },  // África do Sul
-      { lat: 35.861710, lng: 137.971610 }, // Japão (Rural)
-      { lat: -25.274410, lng: 133.775110 }, // Austrália (Outback)
-      { lat: 36.500010, lng: 127.500010 }, // Coreia do Sul
-      { lat: 53.142410, lng: -7.692120 },   // Irlanda
-      { lat: 43.500010, lng: -4.000010 },   // Espanha
-      { lat: -22.560010, lng: 17.080010 }   // Namíbia
+      // Brasil
+      { lat: -22.951916, lng: -43.210487 }, { lat: -29.982145, lng: -52.381230 },
+      { lat: -15.793889, lng: -47.882778 }, { lat: -25.428400, lng: -49.273300 },
+      { lat: -12.971400, lng: -38.501400 }, { lat: -3.731900, lng: -38.526700 },
+      { lat: -30.034600, lng: -51.217700 }, { lat: -19.916700, lng: -43.934500 },
+      
+      // Américas
+      { lat: 37.819928, lng: -122.478255 }, { lat: 36.169900, lng: -115.139800 },
+      { lat: 40.758000, lng: -73.985500 },  { lat: 25.761700, lng: -80.191800 },
+      { lat: 45.501700, lng: -73.567300 },  { lat: 19.432600, lng: -99.133200 },
+      { lat: -33.448900, lng: -70.669300 }, { lat: -34.603700, lng: -58.381600 },
+      { lat: -12.046400, lng: -77.042800 }, { lat: 4.711000, lng: -74.072100 },
+
+      // Europa
+      { lat: 48.858370, lng: 2.294481 },    { lat: 41.890210, lng: 12.492231 },
+      { lat: 51.500729, lng: -0.124625 },   { lat: 52.516275, lng: 13.377704 },
+      { lat: 40.416700, lng: -3.703700 },   { lat: 38.722300, lng: -9.139300 },
+      { lat: 52.367600, lng: 4.904100 },    { lat: 50.850300, lng: 4.351700 },
+      { lat: 48.208200, lng: 16.373800 },   { lat: 47.497900, lng: 19.040200 },
+      { lat: 50.075500, lng: 14.437800 },   { lat: 52.229700, lng: 21.012200 },
+      { lat: 59.329300, lng: 18.068600 },   { lat: 59.913900, lng: 10.752200 },
+      { lat: 60.169900, lng: 24.938400 },   { lat: 55.676100, lng: 12.568300 },
+      { lat: 37.983800, lng: 23.727500 },   { lat: 41.008200, lng: 28.978400 },
+
+      // Ásia & Oceania
+      { lat: 35.658581, lng: 139.745438 }, { lat: 34.693700, lng: 135.502300 },
+      { lat: 37.566500, lng: 126.978000 }, { lat: 1.352100, lng: 103.819800 },
+      { lat: 13.756300, lng: 100.501800 }, { lat: 3.139000, lng: 101.686900 },
+      { lat: -33.856784, lng: 151.215297 }, { lat: -37.813600, lng: 144.963100 },
+      { lat: -36.848500, lng: 174.763300 }, { lat: -41.286500, lng: 174.776200 },
+
+      // África
+      { lat: -33.924900, lng: 18.424100 },  { lat: -26.204100, lng: 28.047300 },
+      { lat: 31.629500, lng: -7.981100 },   { lat: 30.044400, lng: 31.235700 }
     ];
 
     let roomRef, playerName, roomId, currentLocation;
@@ -320,8 +339,9 @@
 
       currentLocation = data.roundsData[currentRound - 1];
 
+      const randomHeading = Math.floor(Math.random() * 360);
       const iframe = document.getElementById('street-view-container');
-      iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,0,0,0,0&output=svembed`;
+      iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,${randomHeading},0,0,0&output=svembed`;
 
       if (!guessMap) {
         initGuessMap();
@@ -349,16 +369,15 @@
         
         document.getElementById('timer-count').innerText = timeLeft;
 
-        // Atualiza Animação da Barra
         const percentage = (timeLeft / roundDuration) * 100;
         timerBar.style.width = percentage + "%";
 
         if (percentage < 25) {
-          timerBar.style.backgroundColor = "#e74c3c"; // Vermelho
+          timerBar.style.backgroundColor = "#e74c3c";
         } else if (percentage < 50) {
-          timerBar.style.backgroundColor = "#f39c12"; // Laranja
+          timerBar.style.backgroundColor = "#f39c12";
         } else {
-          timerBar.style.backgroundColor = "#2ecc71"; // Verde
+          timerBar.style.backgroundColor = "#2ecc71";
         }
 
         if (timeLeft <= 0) {
@@ -429,7 +448,6 @@
       const modal = document.getElementById('result-modal');
       const details = document.getElementById('result-details');
 
-      // 1. Revela a resposta real no minimapa e traça a linha do palpite do jogador
       if (!realMarker) {
         realMarker = L.marker([currentLocation.lat, currentLocation.lng]).addTo(guessMap)
           .bindPopup("Local Exato!").openPopup();
@@ -448,9 +466,7 @@
         guessMap.fitBounds(bounds, { padding: [30, 30] });
       }
 
-      // 2. Monta a Tabela de Resultados
       if (roundNum >= 8) {
-        // Tabela Final (Ranking de 8 Rodadas)
         let html = `
           <table class="result-table">
             <thead>
@@ -476,10 +492,10 @@
           document.getElementById('btn-restart-game').style.display = 'block';
           document.getElementById('btn-next-round').style.display = 'none';
         }
+        document.getElementById('btn-home-screen').style.display = 'block';
         document.getElementById('waiting-host-msg').style.display = 'none';
 
       } else {
-        // Tabela da Rodada Atual
         let html = `
           <p style="color:#aaa; margin-bottom:10px;">Rodada ${roundNum} de 8</p>
           <table class="result-table">
@@ -504,10 +520,12 @@
         if (isHost) {
           document.getElementById('btn-next-round').style.display = 'block';
           document.getElementById('btn-restart-game').style.display = 'none';
+          document.getElementById('btn-home-screen').style.display = 'none';
           document.getElementById('waiting-host-msg').style.display = 'none';
         } else {
           document.getElementById('btn-next-round').style.display = 'none';
           document.getElementById('btn-restart-game').style.display = 'none';
+          document.getElementById('btn-home-screen').style.display = 'none';
           document.getElementById('waiting-host-msg').style.display = 'block';
         }
       }
@@ -529,7 +547,6 @@
       const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
       const selectedRounds = shuffled.slice(0, 8);
 
-      // Reseta pontuação dos jogadores e inicia a nova partida
       roomRef.child('players').once('value', snapshot => {
         const players = snapshot.val() || {};
         const resetPlayers = {};
