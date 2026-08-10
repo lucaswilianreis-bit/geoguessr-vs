@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GeoGuessr VS - Multiplayer</title>
+  <title>GeoGuessr VS - Multiplayer 8 Rodadas</title>
 
-  <!-- CSS do Leaflet (Mapa de Palpites) -->
+  <!-- CSS do Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
@@ -14,7 +14,7 @@
 
     #street-view-container { width: 100%; height: 100%; border: none; }
 
-    /* Máscara para cobrir a barra de localização superior */
+    /* Máscara superior */
     #hide-location-overlay {
       position: absolute; top: 0; left: 0; width: 380px; height: 80px;
       background-color: #121212; z-index: 500; pointer-events: none;
@@ -23,15 +23,15 @@
       box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
     }
 
-    /* HUD do Cronômetro */
-    #timer-hud {
+    /* HUD do Cronômetro e Rodadas */
+    #hud-info {
       position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
       background: rgba(18, 18, 18, 0.9); padding: 10px 25px; border-radius: 20px;
-      border: 2px solid #e74c3c; font-size: 1.5rem; font-weight: bold; z-index: 500;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: none;
+      border: 2px solid #3498db; font-size: 1.2rem; font-weight: bold; z-index: 500;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: none; text-align: center;
     }
 
-    /* Tela Inicial (Lobby) */
+    /* Lobby e Sala de Espera */
     #lobby-overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: #121212; z-index: 9999; display: flex; flex-direction: column;
@@ -39,7 +39,7 @@
     }
 
     .card {
-      background: #1e1e1e; padding: 30px; border-radius: 12px; width: 340px;
+      background: #1e1e1e; padding: 30px; border-radius: 12px; width: 380px;
       text-align: center; box-shadow: 0 8px 25px rgba(0,0,0,0.7);
     }
 
@@ -52,10 +52,15 @@
 
     button { background: #3498db; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
     button:hover { background: #2980b9; }
+    button:disabled { background: #555 !important; cursor: not-allowed; }
     .btn-green { background: #27ae60; }
     .btn-green:hover { background: #219150; }
 
-    /* Minimapa com Expansão Automática */
+    #player-list {
+      margin: 15px 0; text-align: left; background: #2a2a2a; padding: 10px; border-radius: 8px; max-height: 120px; overflow-y: auto;
+    }
+
+    /* Minimapa */
     #guess-container {
       position: absolute; bottom: 20px; right: 20px; width: 400px; height: 320px;
       background: rgba(18, 18, 18, 0.95); border: 2px solid #333; border-radius: 14px;
@@ -65,11 +70,11 @@
     #guess-container:hover { width: 580px; height: 460px; border-color: #3498db; }
     #guess-map { width: 100%; flex: 1; border-radius: 8px; }
 
-    /* Modal do Resultado do Confronto */
+    /* Modal do Resultado */
     #result-modal {
       display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
       background-color: #1e1e1e; color: #fff; padding: 25px; border-radius: 12px;
-      z-index: 10000; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 360px;
+      z-index: 10000; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.8); width: 380px;
     }
     #result-modal h2 { margin-bottom: 10px; color: #3498db; }
   </style>
@@ -78,17 +83,27 @@
 
   <!-- Lobby Multiplayer -->
   <div id="lobby-overlay">
-    <div class="card">
+    <div class="card" id="login-card">
       <h1 style="margin-bottom:15px; color:#3498db;">GeoGuessr VS</h1>
       <input type="text" id="player-name" placeholder="Seu Nome">
       <input type="text" id="room-code" placeholder="Código da Sala (ex: 1234)">
       <button class="btn-green" onclick="joinRoom()">Entrar / Criar Sala</button>
-      <p id="lobby-status" style="margin-top:15px; font-size:0.9rem; color:#aaa;"></p>
+    </div>
+
+    <!-- Sala de Espera -->
+    <div class="card" id="waiting-card" style="display:none;">
+      <h2 style="color:#3498db;">Sala: <span id="display-room-code"></span></h2>
+      <p style="margin-top:10px; color:#aaa;">Aguardando jogadores entrarem...</p>
+      <div id="player-list"></div>
+      <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">Iniciar Jogo</button>
+      <p id="host-msg" style="font-size:0.85rem; color:#888; margin-top:5px; display:none;">Apenas o criador da sala pode iniciar.</p>
     </div>
   </div>
 
-  <!-- Cronômetro -->
-  <div id="timer-hud">⏱️ <span id="timer-count">60</span>s</div>
+  <!-- HUD da Partida -->
+  <div id="hud-info">
+    Rodada <span id="current-round">1</span>/8 | ⏱️ <span id="timer-count">120</span>s
+  </div>
 
   <!-- Máscara superior -->
   <div id="hide-location-overlay">🌐 Em qual país vocês estão?</div>
@@ -96,17 +111,18 @@
   <!-- Street View Iframe -->
   <iframe id="street-view-container" allowfullscreen></iframe>
 
-  <!-- Minimapa para o Palpite -->
+  <!-- Minimapa -->
   <div id="guess-container">
     <div id="guess-map"></div>
     <button id="btn-guess" disabled onclick="submitGuess()">Enviar Palpite</button>
   </div>
 
-  <!-- Modal do Resultado Final -->
+  <!-- Modal de Resultados da Rodada / Final -->
   <div id="result-modal">
     <h2 id="winner-title">Resultado da Rodada</h2>
     <div id="result-details" style="margin: 15px 0; text-align: left; font-size: 0.95rem;"></div>
-    <button onclick="location.reload()">Próxima Rodada</button>
+    <button id="btn-next-round" class="btn-green" style="display:none;" onclick="nextRoundHost()">Próxima Rodada</button>
+    <p id="waiting-host-msg" style="font-size:0.85rem; color:#aaa; display:none;">Aguardando o criador da sala avançar...</p>
   </div>
 
   <!-- JS do Leaflet e SDKs do Firebase -->
@@ -115,7 +131,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
   <script>
-    // Configuração do Firebase fornecida
     const firebaseConfig = {
       apiKey: "AIzaSyBvnd-MlNtB1IGmbT6y90sT-2clIi0Up60",
       authDomain: "testemapa-f65c7.firebaseapp.com",
@@ -127,27 +142,30 @@
       measurementId: "G-M50RJDGJ17"
     };
 
-    // Inicializa o Firebase
     firebase.initializeApp(firebaseConfig);
 
-    // Banco de Locais Globais Validados
-    const locations = [
-      { lat: -13.858223, lng: -46.283112 }, // GO, Brasil
+    // Lista com alta densidade e estabilidade garantida no Street View
+    const verifiedLocations = [
+      { lat: -22.951916, lng: -43.210487 }, // Rio de Janeiro, Brasil
       { lat: -29.982145, lng: -52.381230 }, // RS, Brasil
+      { lat: 48.858370, lng: 2.294481 },    // Paris, França
+      { lat: 35.658581, lng: 139.745438 },  // Tóquio, Japão
       { lat: -38.416098, lng: -63.616672 }, // Argentina
-      { lat: -23.518011, lng: -68.321045 }, // Chile (Atacama)
-      { lat: 46.812310, lng: -100.783120 }, // Dakota do Norte, EUA
-      { lat: 31.968640, lng: -99.901810 },  // Texas, EUA
+      { lat: 41.890210, lng: 12.492231 },   // Roma, Itália
+      { lat: 51.500729, lng: -0.124625 },   // Londres, Reino Unido
+      { lat: -33.856784, lng: 151.215297 }, // Sydney, Austrália
+      { lat: 37.819928, lng: -122.478255 }, // São Francisco, EUA
+      { lat: 52.516275, lng: 13.377704 },  // Berlim, Alemanha
       { lat: 62.000010, lng: 15.000010 },   // Suécia
-      { lat: 43.500010, lng: -4.000010 },   // Espanha
       { lat: -31.900010, lng: 20.200010 },  // África do Sul
-      { lat: 35.861710, lng: 137.971610 }, // Japão
-      { lat: -25.274410, lng: 133.775110 }  // Austrália
+      { lat: 35.861710, lng: 137.971610 }, // Japão (Rural)
+      { lat: -25.274410, lng: 133.775110 }  // Austrália (Outback)
     ];
 
     let roomRef, playerName, roomId, currentLocation;
     let guessMap, userMarker, guessedCoords, timerInterval;
-    let timeLeft = 60;
+    let isHost = false;
+    let currentRound = 1;
     let myGuessSubmitted = false;
 
     function joinRoom() {
@@ -159,63 +177,117 @@
         return;
       }
 
-      document.getElementById('lobby-status').innerText = "Conectando à sala...";
+      document.getElementById('login-card').style.display = 'none';
+      document.getElementById('waiting-card').style.display = 'block';
+      document.getElementById('display-room-code').innerText = roomId;
+
       roomRef = firebase.database().ref('rooms/' + roomId);
 
       roomRef.once('value', snapshot => {
         const data = snapshot.val();
         if (!data) {
-          // O primeiro a entrar cria a sala e sorteia a localização
-          const selectedLoc = locations[Math.floor(Math.random() * locations.length)];
+          // É o Criador / Host
+          isHost = true;
           roomRef.set({
-            location: selectedLoc,
-            startTime: Date.now(),
-            players: { [playerName]: { ready: true } }
+            host: playerName,
+            status: 'waiting',
+            round: 1,
+            players: { [playerName]: { totalScore: 0 } }
           });
         } else {
-          // O segundo entra na sala existente
-          roomRef.child('players/' + playerName).set({ ready: true });
+          // Jogador entrando
+          isHost = (data.host === playerName);
+          roomRef.child('players/' + playerName).update({ totalScore: 0 });
         }
 
-        // Escuta as atualizações da sala
-        listenRoom();
+        listenLobby();
       });
     }
 
-    function listenRoom() {
-      document.getElementById('lobby-overlay').style.display = 'none';
-      document.getElementById('timer-hud').style.display = 'block';
-
-      initGuessMap();
-
+    function listenLobby() {
       roomRef.on('value', snapshot => {
         const data = snapshot.val();
         if (!data) return;
 
-        currentLocation = data.location;
-        
-        // Sincroniza o Street View
-        const iframe = document.getElementById('street-view-container');
-        if (!iframe.src) {
-          iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,0,0,0,0&output=svembed`;
-          startTimer(data.startTime);
+        // Atualiza Lista de Jogadores na sala de espera
+        const players = data.players || {};
+        const playerListDiv = document.getElementById('player-list');
+        playerListDiv.innerHTML = "<strong>Jogadores na sala:</strong><br>" + 
+          Object.keys(players).map(p => `• ${p} ${p === data.host ? '(Host)' : ''}`).join('<br>');
+
+        // Exibe controles do Host
+        if (isHost && data.status === 'waiting') {
+          document.getElementById('btn-start-game').style.display = 'block';
+          document.getElementById('host-msg').style.display = 'none';
+        } else if (data.status === 'waiting') {
+          document.getElementById('btn-start-game').style.display = 'none';
+          document.getElementById('host-msg').style.display = 'block';
         }
 
-        // Verifica se os jogadores enviaram palpites
-        const players = data.players || {};
-        const playerKeys = Object.keys(players);
-        
-        let allSubmitted = playerKeys.length >= 2 && playerKeys.every(k => players[k].score !== undefined);
-        if (allSubmitted) {
-          showFinalResults(players);
+        // Se o jogo começou
+        if (data.status === 'playing') {
+          document.getElementById('lobby-overlay').style.display = 'none';
+          document.getElementById('hud-info').style.display = 'block';
+          
+          if (currentRound !== data.round || !currentLocation) {
+            currentRound = data.round;
+            document.getElementById('current-round').innerText = currentRound;
+            loadRoundData(data);
+          }
+
+          // Checa se todos enviaram palpite
+          const playerKeys = Object.keys(players);
+          let allSubmitted = playerKeys.length > 0 && playerKeys.every(k => players[k][`r${currentRound}_score`] !== undefined);
+          
+          if (allSubmitted) {
+            showRoundResults(players, data.round);
+          }
         }
       });
     }
 
+    function startGameHost() {
+      if (!isHost) return;
+      
+      // Sorteia locais para as 8 rodadas
+      const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
+      const selectedRounds = shuffled.slice(0, 8);
+
+      roomRef.update({
+        status: 'playing',
+        round: 1,
+        startTime: Date.now(),
+        roundsData: selectedRounds
+      });
+    }
+
+    function loadRoundData(data) {
+      myGuessSubmitted = false;
+      document.getElementById('result-modal').style.display = 'none';
+      document.getElementById('btn-guess').disabled = true;
+      document.getElementById('btn-guess').innerText = "Enviar Palpite";
+
+      currentLocation = data.roundsData[currentRound - 1];
+
+      // Carrega o iframe com parâmetros otimizados e fallback automático
+      const iframe = document.getElementById('street-view-container');
+      iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,0,0,0,0&output=svembed`;
+
+      if (!guessMap) {
+        initGuessMap();
+      } else if (userMarker) {
+        guessMap.removeLayer(userMarker);
+        userMarker = null;
+      }
+
+      startTimer(data.startTime);
+    }
+
     function startTimer(startTime) {
+      clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        timeLeft = Math.max(0, 60 - elapsed);
+        const timeLeft = Math.max(0, 120 - elapsed); // 2 minutos (120s)
         document.getElementById('timer-count').innerText = timeLeft;
 
         if (timeLeft <= 0) {
@@ -227,8 +299,6 @@
 
     function initGuessMap() {
       guessMap = L.map('guess-map').setView([20, 0], 2);
-
-      // Mapa em Português
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(guessMap);
 
       const container = document.getElementById('guess-container');
@@ -245,7 +315,6 @@
     }
 
     function calculateScore(distanceKm) {
-      // Pontuação proporcional até 5000 pontos
       return Math.max(0, Math.round(5000 * Math.exp(-distanceKm / 2000)));
     }
 
@@ -261,7 +330,7 @@
       if (myGuessSubmitted) return;
       myGuessSubmitted = true;
       document.getElementById('btn-guess').disabled = true;
-      document.getElementById('btn-guess').innerText = "Aguardando oponente...";
+      document.getElementById('btn-guess').innerText = "Aguardando outros jogadores...";
 
       const lat = guessedCoords ? guessedCoords.lat : 0;
       const lng = guessedCoords ? guessedCoords.lng : 0;
@@ -269,42 +338,83 @@
       const dist = guessedCoords ? calculateDistance(currentLocation.lat, currentLocation.lng, lat, lng) : 20000;
       const score = guessedCoords ? calculateScore(dist) : 0;
 
-      roomRef.child('players/' + playerName).update({
-        lat: lat, lng: lng, distance: Math.round(dist), score: score
+      // Salva a pontuação da rodada e atualiza o total acumulado
+      roomRef.child('players/' + playerName).once('value', snapshot => {
+        const pData = snapshot.val() || {};
+        const newTotal = (pData.totalScore || 0) + score;
+
+        const updates = {};
+        updates[`r${currentRound}_score`] = score;
+        updates[`r${currentRound}_dist`] = Math.round(dist);
+        updates[`totalScore`] = newTotal;
+
+        roomRef.child('players/' + playerName).update(updates);
       });
     }
 
-    function showFinalResults(players) {
+    function showRoundResults(players, roundNum) {
       clearInterval(timerInterval);
       const modal = document.getElementById('result-modal');
       const details = document.getElementById('result-details');
 
-      // Marca o ponto correto no minimapa
       L.marker([currentLocation.lat, currentLocation.lng]).addTo(guessMap)
         .bindPopup("Local Exato!").openPopup();
 
-      let html = "";
-      let winnerName = "";
-      let highestScore = -1;
+      let html = `<p style="color:#aaa; margin-bottom:10px;">Fim da Rodada ${roundNum} de 8</p>`;
+      let roundWinner = "";
+      let highestRoundScore = -1;
 
       Object.keys(players).forEach(pName => {
         const p = players[pName];
-        html += `<p style="margin-bottom:8px;"><strong>${pName}:</strong> ${p.score || 0} pts (${p.distance !== undefined ? p.distance + ' km' : 'Sem palpite'})</p>`;
+        const rScore = p[`r${roundNum}_score`] || 0;
+        const rDist = p[`r${roundNum}_dist`] !== undefined ? p[`r${roundNum}_dist`] + ' km' : 'Sem palpite';
+
+        html += `<p style="margin-bottom:6px;"><strong>${pName}:</strong> +${rScore} pts (${rDist}) | <em>Total: ${p.totalScore || 0} pts</em></p>`;
         
-        if (p.score > highestScore) {
-          highestScore = p.score;
-          winnerName = pName;
+        if (rScore > highestRoundScore) {
+          highestRoundScore = rScore;
+          roundWinner = pName;
         }
 
-        // Adiciona pino de cada jogador no mapa
         if (p.lat && p.lng) {
           L.marker([p.lat, p.lng]).addTo(guessMap).bindPopup(pName);
         }
       });
 
-      document.getElementById('winner-title').innerText = winnerName ? `🏆 ${winnerName} Venceu!` : "Empate!";
+      if (roundNum >= 8) {
+        // Fim de jogo após 8 rodadas
+        let champName = "";
+        let maxTotal = -1;
+        Object.keys(players).forEach(pName => {
+          if ((players[pName].totalScore || 0) > maxTotal) {
+            maxTotal = players[pName].totalScore || 0;
+            champName = pName;
+          }
+        });
+        document.getElementById('winner-title').innerText = `🏆 Campeão Geral: ${champName}!`;
+        document.getElementById('btn-next-round').style.display = 'none';
+        document.getElementById('waiting-host-msg').style.display = 'none';
+      } else {
+        document.getElementById('winner-title').innerText = `Rodada ${roundNum}: Vencedor ${roundWinner}!`;
+        if (isHost) {
+          document.getElementById('btn-next-round').style.display = 'block';
+          document.getElementById('waiting-host-msg').style.display = 'none';
+        } else {
+          document.getElementById('btn-next-round').style.display = 'none';
+          document.getElementById('waiting-host-msg').style.display = 'block';
+        }
+      }
+
       details.innerHTML = html;
       modal.style.display = 'block';
+    }
+
+    function nextRoundHost() {
+      if (!isHost) return;
+      roomRef.update({
+        round: currentRound + 1,
+        startTime: Date.now()
+      });
     }
   </script>
 </body>
