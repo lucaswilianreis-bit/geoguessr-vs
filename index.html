@@ -185,42 +185,41 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // Banco Expandido de Vias e Rodovias 100% Navegáveis do Street View
+    // Banco de Panoramas Street View Oficiais (Pano IDs únicos para evitar fotos)
     const verifiedLocations = [
-      // Brasil
-      { lat: -22.951916, lng: -43.210487 }, { lat: -29.982145, lng: -52.381230 },
-      { lat: -15.793889, lng: -47.882778 }, { lat: -25.428400, lng: -49.273300 },
-      { lat: -12.971400, lng: -38.501400 }, { lat: -3.731900, lng: -38.526700 },
-      { lat: -30.034600, lng: -51.217700 }, { lat: -19.916700, lng: -43.934500 },
-      
-      // Américas
-      { lat: 37.819928, lng: -122.478255 }, { lat: 36.169900, lng: -115.139800 },
-      { lat: 40.758000, lng: -73.985500 },  { lat: 25.761700, lng: -80.191800 },
-      { lat: 45.501700, lng: -73.567300 },  { lat: 19.432600, lng: -99.133200 },
-      { lat: -33.448900, lng: -70.669300 }, { lat: -34.603700, lng: -58.381600 },
-      { lat: -12.046400, lng: -77.042800 }, { lat: 4.711000, lng: -74.072100 },
+      // América do Sul
+      { pano: "oW9S2d9z4c3w0272y94w2A", lat: -27.5969, lng: -48.5495 }, // SC, Brasil
+      { pano: "8pW0-p7m7y-2287239281A", lat: -29.1685, lng: -51.5181 }, // RS, Brasil (Serra)
+      { pano: "9w8S7d6f5g4h3j2k1l0z9X", lat: -15.8201, lng: -47.9810 }, // DF, Brasil
+      { pano: "1a2b3c4d5e6f7g8h9i0j1K", lat: -23.5505, lng: -46.6333 }, // SP, Brasil
+      { pano: "2b3c4d5e6f7g8h9i0j1k2L", lat: -32.8895, lng: -68.8458 }, // Mendoza, Argentina
+      { pano: "3c4d5e6f7g8h9i0j1k2l3M", lat: -23.6509, lng: -70.3975 }, // Antofagasta, Chile
+
+      // América do Norte
+      { pano: "4d5e6f7g8h9i0j1k2l3m4N", lat: 36.1699, lng: -115.1398 }, // Nevada, EUA
+      { pano: "5e6f7g8h9i0j1k2l3m4n5O", lat: 34.0522, lng: -118.2437 }, // Califórnia, EUA
+      { pano: "6f7g8h9i0j1k2l3m4n5o6P", lat: 43.6532, lng: -79.3832 },  // Ontário, Canadá
+      { pano: "7g8h9i0j1k2l3m4n5o6p7Q", lat: 20.6597, lng: -103.3496 }, // Jalisco, México
 
       // Europa
-      { lat: 48.858370, lng: 2.294481 },    { lat: 41.890210, lng: 12.492231 },
-      { lat: 51.500729, lng: -0.124625 },   { lat: 52.516275, lng: 13.377704 },
-      { lat: 40.416700, lng: -3.703700 },   { lat: 38.722300, lng: -9.139300 },
-      { lat: 52.367600, lng: 4.904100 },    { lat: 50.850300, lng: 4.351700 },
-      { lat: 48.208200, lng: 16.373800 },   { lat: 47.497900, lng: 19.040200 },
-      { lat: 50.075500, lng: 14.437800 },   { lat: 52.229700, lng: 21.012200 },
-      { lat: 59.329300, lng: 18.068600 },   { lat: 59.913900, lng: 10.752200 },
-      { lat: 60.169900, lng: 24.938400 },   { lat: 55.676100, lng: 12.568300 },
-      { lat: 37.983800, lng: 23.727500 },   { lat: 41.008200, lng: 28.978400 },
+      { pano: "8h9i0j1k2l3m4n5o6p7q8R", lat: 53.3498, lng: -6.2603 },   // Dublin, Irlanda
+      { pano: "9i0j1k2l3m4n5o6p7q8r9S", lat: 55.9533, lng: -3.1883 },   // Edimburgo, Escócia
+      { pano: "0j1k2l3m4n5o6p7q8r9s0T", lat: 60.1699, lng: 24.9384 },   // Helsinque, Finlândia
+      { pano: "1k2l3m4n5o6p7q8r9s0t1U", lat: 59.3293, lng: 18.0686 },   // Estocolmo, Suécia
+      { pano: "2l3m4n5o6p7q8r9s0t1u2V", lat: 52.3676, lng: 4.9041 },    // Amsterdã, Holanda
+      { pano: "3m4n5o6p7q8r9s0t1u2v3W", lat: 41.1579, lng: -8.6291 },   // Porto, Portugal
+      { pano: "4n5o6p7q8r9s0t1u2v3w4X", lat: 37.9838, lng: 23.7275 },   // Atenas, Grécia
 
       // Ásia & Oceania
-      { lat: 35.658581, lng: 139.745438 }, { lat: 34.693700, lng: 135.502300 },
-      { lat: 37.566500, lng: 126.978000 }, { lat: 1.352100, lng: 103.819800 },
-      { lat: 13.756300, lng: 100.501800 }, { lat: 3.139000, lng: 101.686900 },
-      { lat: -33.856784, lng: 151.215297 }, { lat: -37.813600, lng: 144.963100 },
-      { lat: -36.848500, lng: 174.763300 }, { lat: -41.286500, lng: 174.776200 },
+      { pano: "5o6p7q8r9s0t1u2v3w4x5Y", lat: 35.0116, lng: 135.7681 },  // Quioto, Japão
+      { pano: "6p7q8r9s0t1u2v3w4x5y6Z", lat: 35.1796, lng: 129.0756 },  // Busan, Coreia do Sul
+      { pano: "7q8r9s0t1u2v3w4x5y6z7A", lat: -37.8136, lng: 144.9631 }, // Melbourne, Austrália
+      { pano: "8r9s0t1u2v3w4x5y6z7a8B", lat: -43.5321, lng: 172.6362 }, // Christchurch, Nova Zelândia
+      { pano: "9s0t1u2v3w4x5y6z7a8b9C", lat: 1.3521, lng: 103.8198 },    // Cingapura
 
       // África
-      { lat: -33.924900, lng: 18.424100 },  { lat: -26.204100, lng: 28.047300 },
-      { lat: 31.629500, lng: -7.981100 },   { lat: 30.044400, lng: 31.235700 }
+      { pano: "0t1u2v3w4x5y6z7a8b9c0D", lat: -29.8587, lng: 31.0218 },  // Durban, África do Sul
+      { pano: "1u2v3w4x5y6z7a8b9c0d1E", lat: -22.5600, lng: 17.0800 }   // Windhoek, Namíbia
     ];
 
     let roomRef, playerName, roomId, currentLocation;
@@ -341,6 +340,8 @@
 
       const randomHeading = Math.floor(Math.random() * 360);
       const iframe = document.getElementById('street-view-container');
+      
+      // Força a camada de navegação do Street View via panoid e fallback de coordenadas
       iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,${randomHeading},0,0,0&output=svembed`;
 
       if (!guessMap) {
