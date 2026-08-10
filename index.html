@@ -187,21 +187,30 @@
       roomRef = firebase.database().ref('rooms/' + roomId);
 
       if (createNew) {
-        // Força criação de nova sala limpa
+        // Força permissão local de Host imediatamente
         isHost = true;
+        document.getElementById('btn-start-game').style.display = 'block';
+        document.getElementById('waiting-status').innerText = "Sua sala foi criada!";
+        document.getElementById('player-list').innerHTML = `<strong>Jogadores Conectados:</strong><br>• ${playerName} 👑 (Dono)`;
+
+        // Grava no Firebase sem travar a interface
         roomRef.set({
           host: playerName,
           status: 'waiting',
           round: 1,
           players: { [playerName]: { totalScore: 0 } }
+        }).catch(err => {
+          console.error("Erro Firebase:", err);
+          alert("Verifique se as REGRAS do Realtime Database no Firebase estão como TRUE.");
         });
+
         listenLobby();
       } else {
-        // Tenta entrar em sala existente
+        // Entrar em sala existente
         roomRef.once('value', snapshot => {
           const data = snapshot.val();
           if (!data) {
-            alert("Esta sala não existe! Clique em 'Criar Nova Sala'.");
+            alert("Esta sala não existe ainda! Clique em 'Criar Nova Sala'.");
             location.reload();
             return;
           }
@@ -225,7 +234,7 @@
         if (isHost && data.status === 'waiting') {
           document.getElementById('btn-start-game').style.display = 'block';
           document.getElementById('host-msg').style.display = 'none';
-          document.getElementById('waiting-status').innerText = "Sua sala está pronta!";
+          document.getElementById('waiting-status').innerText = "Pronto para iniciar!";
         } else if (data.status === 'waiting') {
           document.getElementById('btn-start-game').style.display = 'none';
           document.getElementById('host-msg').style.display = 'block';
