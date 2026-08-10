@@ -55,9 +55,11 @@
     button:disabled { background: #555 !important; cursor: not-allowed; }
     .btn-green { background: #27ae60; }
     .btn-green:hover { background: #219150; }
+    .btn-orange { background: #e67e22; }
+    .btn-orange:hover { background: #d35400; }
 
     #player-list {
-      margin: 15px 0; text-align: left; background: #2a2a2a; padding: 10px; border-radius: 8px; max-height: 120px; overflow-y: auto;
+      margin: 15px 0; text-align: left; background: #2a2a2a; padding: 12px; border-radius: 8px; max-height: 140px; overflow-y: auto; font-size: 0.95rem;
     }
 
     /* Minimapa */
@@ -87,15 +89,17 @@
       <h1 style="margin-bottom:15px; color:#3498db;">GeoGuessr VS</h1>
       <input type="text" id="player-name" placeholder="Seu Nome">
       <input type="text" id="room-code" placeholder="Código da Sala (ex: 1234)">
-      <button class="btn-green" onclick="joinRoom()">Entrar / Criar Sala</button>
+      
+      <button class="btn-green" onclick="handleJoin(true)">Criar Nova Sala</button>
+      <button class="btn-orange" onclick="handleJoin(false)">Entrar em Sala Existente</button>
     </div>
 
     <!-- Sala de Espera -->
     <div class="card" id="waiting-card" style="display:none;">
       <h2 style="color:#3498db;">Sala: <span id="display-room-code"></span></h2>
-      <p style="margin-top:10px; color:#aaa;">Aguardando início do jogo...</p>
+      <p style="margin-top:5px; color:#aaa;" id="waiting-status">Carregando sala...</p>
       <div id="player-list"></div>
-      <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">Iniciar Jogo Solo / Multiplayer</button>
+      <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">🚀 Iniciar Jogo (Solo / Duo)</button>
       <p id="host-msg" style="font-size:0.85rem; color:#888; margin-top:5px; display:none;">Aguardando o criador iniciar a partida...</p>
     </div>
   </div>
@@ -167,7 +171,7 @@
     let currentRound = 1;
     let myGuessSubmitted = false;
 
-    function joinRoom() {
+    function handleJoin(createNew) {
       playerName = document.getElementById('player-name').value.trim();
       roomId = document.getElementById('room-code').value.trim();
 
@@ -182,23 +186,30 @@
 
       roomRef = firebase.database().ref('rooms/' + roomId);
 
-      roomRef.once('value', snapshot => {
-        const data = snapshot.val();
-        if (!data) {
-          isHost = true;
-          roomRef.set({
-            host: playerName,
-            status: 'waiting',
-            round: 1,
-            players: { [playerName]: { totalScore: 0 } }
-          });
-        } else {
+      if (createNew) {
+        // Força criação de nova sala limpa
+        isHost = true;
+        roomRef.set({
+          host: playerName,
+          status: 'waiting',
+          round: 1,
+          players: { [playerName]: { totalScore: 0 } }
+        });
+        listenLobby();
+      } else {
+        // Tenta entrar em sala existente
+        roomRef.once('value', snapshot => {
+          const data = snapshot.val();
+          if (!data) {
+            alert("Esta sala não existe! Clique em 'Criar Nova Sala'.");
+            location.reload();
+            return;
+          }
           isHost = (data.host === playerName);
           roomRef.child('players/' + playerName).update({ totalScore: 0 });
-        }
-
-        listenLobby();
-      });
+          listenLobby();
+        });
+      }
     }
 
     function listenLobby() {
@@ -208,16 +219,17 @@
 
         const players = data.players || {};
         const playerListDiv = document.getElementById('player-list');
-        playerListDiv.innerHTML = "<strong>Jogadores na sala:</strong><br>" + 
-          Object.keys(players).map(p => `• ${p} ${p === data.host ? '(Host)' : ''}`).join('<br>');
+        playerListDiv.innerHTML = "<strong>Jogadores Conectados:</strong><br>" + 
+          Object.keys(players).map(p => `• ${p} ${p === data.host ? '👑 (Dono)' : ''}`).join('<br>');
 
-        // Libera o botão de inicio para o Host independente de haver 1 ou mais jogadores
         if (isHost && data.status === 'waiting') {
           document.getElementById('btn-start-game').style.display = 'block';
           document.getElementById('host-msg').style.display = 'none';
+          document.getElementById('waiting-status').innerText = "Sua sala está pronta!";
         } else if (data.status === 'waiting') {
           document.getElementById('btn-start-game').style.display = 'none';
           document.getElementById('host-msg').style.display = 'block';
+          document.getElementById('waiting-status').innerText = "Aguardando o dono iniciar a partida...";
         }
 
         if (data.status === 'playing') {
@@ -230,7 +242,6 @@
             loadRoundData(data);
           }
 
-          // Verifica se TODOS os jogadores atualmente conectados enviaram palpite
           const playerKeys = Object.keys(players);
           let allSubmitted = playerKeys.length > 0 && playerKeys.every(k => players[k][`r${currentRound}_score`] !== undefined);
           
