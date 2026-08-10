@@ -14,7 +14,7 @@
 
     #street-view-container { width: 100%; height: 100%; border: none; }
 
-    /* Máscara superior para cobrir endereço */
+    /* Máscara superior */
     #hide-location-overlay {
       position: absolute; top: 0; left: 0; width: 380px; height: 80px;
       background-color: #121212; z-index: 500; pointer-events: none;
@@ -23,7 +23,7 @@
       box-shadow: 2px 2px 10px rgba(0,0,0,0.5);
     }
 
-    /* HUD do Cronômetro, Rodada e Barra de Animação */
+    /* HUD do Cronômetro */
     #hud-info {
       position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
       background: rgba(18, 18, 18, 0.95); padding: 12px 25px; border-radius: 20px;
@@ -185,41 +185,30 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // Banco de Panoramas Street View Oficiais (Pano IDs únicos para evitar fotos)
+    // Banco de Locais Otimizados com suporte de coordenadas garantidas
     const verifiedLocations = [
-      // América do Sul
-      { pano: "oW9S2d9z4c3w0272y94w2A", lat: -27.5969, lng: -48.5495 }, // SC, Brasil
-      { pano: "8pW0-p7m7y-2287239281A", lat: -29.1685, lng: -51.5181 }, // RS, Brasil (Serra)
-      { pano: "9w8S7d6f5g4h3j2k1l0z9X", lat: -15.8201, lng: -47.9810 }, // DF, Brasil
-      { pano: "1a2b3c4d5e6f7g8h9i0j1K", lat: -23.5505, lng: -46.6333 }, // SP, Brasil
-      { pano: "2b3c4d5e6f7g8h9i0j1k2L", lat: -32.8895, lng: -68.8458 }, // Mendoza, Argentina
-      { pano: "3c4d5e6f7g8h9i0j1k2l3M", lat: -23.6509, lng: -70.3975 }, // Antofagasta, Chile
-
-      // América do Norte
-      { pano: "4d5e6f7g8h9i0j1k2l3m4N", lat: 36.1699, lng: -115.1398 }, // Nevada, EUA
-      { pano: "5e6f7g8h9i0j1k2l3m4n5O", lat: 34.0522, lng: -118.2437 }, // Califórnia, EUA
-      { pano: "6f7g8h9i0j1k2l3m4n5o6P", lat: 43.6532, lng: -79.3832 },  // Ontário, Canadá
-      { pano: "7g8h9i0j1k2l3m4n5o6p7Q", lat: 20.6597, lng: -103.3496 }, // Jalisco, México
-
-      // Europa
-      { pano: "8h9i0j1k2l3m4n5o6p7q8R", lat: 53.3498, lng: -6.2603 },   // Dublin, Irlanda
-      { pano: "9i0j1k2l3m4n5o6p7q8r9S", lat: 55.9533, lng: -3.1883 },   // Edimburgo, Escócia
-      { pano: "0j1k2l3m4n5o6p7q8r9s0T", lat: 60.1699, lng: 24.9384 },   // Helsinque, Finlândia
-      { pano: "1k2l3m4n5o6p7q8r9s0t1U", lat: 59.3293, lng: 18.0686 },   // Estocolmo, Suécia
-      { pano: "2l3m4n5o6p7q8r9s0t1u2V", lat: 52.3676, lng: 4.9041 },    // Amsterdã, Holanda
-      { pano: "3m4n5o6p7q8r9s0t1u2v3W", lat: 41.1579, lng: -8.6291 },   // Porto, Portugal
-      { pano: "4n5o6p7q8r9s0t1u2v3w4X", lat: 37.9838, lng: 23.7275 },   // Atenas, Grécia
-
-      // Ásia & Oceania
-      { pano: "5o6p7q8r9s0t1u2v3w4x5Y", lat: 35.0116, lng: 135.7681 },  // Quioto, Japão
-      { pano: "6p7q8r9s0t1u2v3w4x5y6Z", lat: 35.1796, lng: 129.0756 },  // Busan, Coreia do Sul
-      { pano: "7q8r9s0t1u2v3w4x5y6z7A", lat: -37.8136, lng: 144.9631 }, // Melbourne, Austrália
-      { pano: "8r9s0t1u2v3w4x5y6z7a8B", lat: -43.5321, lng: 172.6362 }, // Christchurch, Nova Zelândia
-      { pano: "9s0t1u2v3w4x5y6z7a8b9C", lat: 1.3521, lng: 103.8198 },    // Cingapura
-
-      // África
-      { pano: "0t1u2v3w4x5y6z7a8b9c0D", lat: -29.8587, lng: 31.0218 },  // Durban, África do Sul
-      { pano: "1u2v3w4x5y6z7a8b9c0d1E", lat: -22.5600, lng: 17.0800 }   // Windhoek, Namíbia
+      { lat: -27.5969, lng: -48.5495 }, // SC, Brasil
+      { lat: -29.1685, lng: -51.5181 }, // RS, Brasil
+      { lat: -15.8201, lng: -47.9810 }, // DF, Brasil
+      { lat: -23.5505, lng: -46.6333 }, // SP, Brasil
+      { lat: -32.8895, lng: -68.8458 }, // Argentina
+      { lat: -23.6509, lng: -70.3975 }, // Chile
+      { lat: 36.1699,  lng: -115.1398 }, // Nevada, EUA
+      { lat: 34.0522,  lng: -118.2437 }, // Califórnia, EUA
+      { lat: 43.6532,  lng: -79.3832 },  // Canadá
+      { lat: 20.6597,  lng: -103.3496 }, // México
+      { lat: 53.3498,  lng: -6.2603 },   // Irlanda
+      { lat: 55.9533,  lng: -3.1883 },   // Escócia
+      { lat: 60.1699,  lng: 24.9384 },   // Finlândia
+      { lat: 59.3293,  lng: 18.0686 },   // Suécia
+      { lat: 52.3676,  lng: 4.9041 },    // Holanda
+      { lat: 41.1579,  lng: -8.6291 },   // Portugal
+      { lat: 37.9838,  lng: 23.7275 },   // Grécia
+      { lat: 35.0116,  lng: 135.7681 },  // Japão
+      { lat: 35.1796,  lng: 129.0756 },  // Coreia do Sul
+      { lat: -37.8136, lng: 144.9631 }, // Austrália
+      { lat: -43.5321, lng: 172.6362 }, // Nova Zelândia
+      { lat: -29.8587, lng: 31.0218 }   // África do Sul
     ];
 
     let roomRef, playerName, roomId, currentLocation;
@@ -232,7 +221,10 @@
     function handleJoin(createNew) {
       playerName = document.getElementById('player-name').value.trim();
       roomId = document.getElementById('room-code').value.trim();
-      roundDuration = parseInt(document.getElementById('time-select').value) || 120;
+      
+      // Converte rigorosamente para número inteiro
+      const selectedTime = document.getElementById('time-select').value;
+      roundDuration = parseInt(selectedTime, 10) || 120;
 
       if (!playerName || !roomId) {
         alert("Preencha seu nome e o código da sala!");
@@ -269,7 +261,7 @@
             return;
           }
           isHost = (data.host === playerName);
-          roundDuration = data.timeLimit || 120;
+          roundDuration = parseInt(data.timeLimit, 10) || 120;
           roomRef.child('players/' + playerName).update({ totalScore: 0 });
           listenLobby();
         });
@@ -281,7 +273,10 @@
         const data = snapshot.val();
         if (!data) return;
 
-        roundDuration = data.timeLimit || 120;
+        if (data.timeLimit) {
+          roundDuration = parseInt(data.timeLimit, 10);
+        }
+
         const players = data.players || {};
         const playerListDiv = document.getElementById('player-list');
         playerListDiv.innerHTML = "<strong>Jogadores Conectados:</strong><br>" + 
@@ -319,15 +314,20 @@
 
     function startGameHost() {
       if (!isHost) return;
-      const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
-      const selectedRounds = shuffled.slice(0, 8);
 
-      roomRef.update({
-        status: 'playing',
-        round: 1,
-        startTime: Date.now(),
-        roundsData: selectedRounds
-      });
+      try {
+        const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
+        const selectedRounds = shuffled.slice(0, 8);
+
+        roomRef.update({
+          status: 'playing',
+          round: 1,
+          startTime: Date.now(),
+          roundsData: selectedRounds
+        });
+      } catch (err) {
+        console.error("Erro ao iniciar jogo:", err);
+      }
     }
 
     function loadRoundData(data) {
@@ -341,7 +341,6 @@
       const randomHeading = Math.floor(Math.random() * 360);
       const iframe = document.getElementById('street-view-container');
       
-      // Força a camada de navegação do Street View via panoid e fallback de coordenadas
       iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,${randomHeading},0,0,0&output=svembed`;
 
       if (!guessMap) {
