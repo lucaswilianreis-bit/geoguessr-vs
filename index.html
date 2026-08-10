@@ -74,6 +74,10 @@
       margin: 15px 0; text-align: left; background: #2a2a2a; padding: 12px; border-radius: 8px; max-height: 140px; overflow-y: auto; font-size: 0.95rem;
     }
 
+    #error-msg {
+      color: #e74c3c; font-size: 0.85rem; margin-top: 10px; display: none;
+    }
+
     /* Minimapa */
     #guess-container {
       position: absolute; bottom: 20px; right: 20px; width: 420px; height: 340px;
@@ -133,6 +137,7 @@
       <div id="player-list"></div>
       <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">🚀 Iniciar Jogo</button>
       <p id="host-msg" style="font-size:0.85rem; color:#888; margin-top:5px; display:none;">Aguardando o criador iniciar a partida...</p>
+      <div id="error-msg"></div>
     </div>
   </div>
 
@@ -185,7 +190,6 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // Banco de Locais Otimizados com suporte de coordenadas garantidas
     const verifiedLocations = [
       { lat: -27.5969, lng: -48.5495 }, // SC, Brasil
       { lat: -29.1685, lng: -51.5181 }, // RS, Brasil
@@ -222,7 +226,6 @@
       playerName = document.getElementById('player-name').value.trim();
       roomId = document.getElementById('room-code').value.trim();
       
-      // Converte rigorosamente para número inteiro
       const selectedTime = document.getElementById('time-select').value;
       roundDuration = parseInt(selectedTime, 10) || 120;
 
@@ -249,6 +252,8 @@
           round: 1,
           timeLimit: roundDuration,
           players: { [playerName]: { totalScore: 0 } }
+        }).catch(err => {
+          showError("Erro Firebase ao criar sala: " + err.message);
         });
 
         listenLobby();
@@ -315,19 +320,31 @@
     function startGameHost() {
       if (!isHost) return;
 
-      try {
-        const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
-        const selectedRounds = shuffled.slice(0, 8);
+      const btn = document.getElementById('btn-start-game');
+      btn.innerText = "Iniciando...";
+      btn.disabled = true;
 
-        roomRef.update({
-          status: 'playing',
-          round: 1,
-          startTime: Date.now(),
-          roundsData: selectedRounds
-        });
-      } catch (err) {
-        console.error("Erro ao iniciar jogo:", err);
-      }
+      const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
+      const selectedRounds = shuffled.slice(0, 8);
+
+      roomRef.update({
+        status: 'playing',
+        round: 1,
+        startTime: Date.now(),
+        roundsData: selectedRounds
+      }).then(() => {
+        // Transição confirmada
+      }).catch(err => {
+        btn.disabled = false;
+        btn.innerText = "🚀 Iniciar Jogo";
+        showError("Permissão negada no Firebase. Verifique as REGRAS do banco.");
+      });
+    }
+
+    function showError(msg) {
+      const errDiv = document.getElementById('error-msg');
+      errDiv.innerText = msg;
+      errDiv.style.display = 'block';
     }
 
     function loadRoundData(data) {
