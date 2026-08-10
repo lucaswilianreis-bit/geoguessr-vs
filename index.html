@@ -93,10 +93,10 @@
     <!-- Sala de Espera -->
     <div class="card" id="waiting-card" style="display:none;">
       <h2 style="color:#3498db;">Sala: <span id="display-room-code"></span></h2>
-      <p style="margin-top:10px; color:#aaa;">Aguardando jogadores entrarem...</p>
+      <p style="margin-top:10px; color:#aaa;">Aguardando início do jogo...</p>
       <div id="player-list"></div>
-      <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">Iniciar Jogo</button>
-      <p id="host-msg" style="font-size:0.85rem; color:#888; margin-top:5px; display:none;">Apenas o criador da sala pode iniciar.</p>
+      <button id="btn-start-game" class="btn-green" style="display:none;" onclick="startGameHost()">Iniciar Jogo Solo / Multiplayer</button>
+      <p id="host-msg" style="font-size:0.85rem; color:#888; margin-top:5px; display:none;">Aguardando o criador iniciar a partida...</p>
     </div>
   </div>
 
@@ -106,7 +106,7 @@
   </div>
 
   <!-- Máscara superior -->
-  <div id="hide-location-overlay">🌐 Em qual país vocês estão?</div>
+  <div id="hide-location-overlay">🌐 Em qual país você está?</div>
 
   <!-- Street View Iframe -->
   <iframe id="street-view-container" allowfullscreen></iframe>
@@ -144,7 +144,6 @@
 
     firebase.initializeApp(firebaseConfig);
 
-    // Lista com alta densidade e estabilidade garantida no Street View
     const verifiedLocations = [
       { lat: -22.951916, lng: -43.210487 }, // Rio de Janeiro, Brasil
       { lat: -29.982145, lng: -52.381230 }, // RS, Brasil
@@ -186,7 +185,6 @@
       roomRef.once('value', snapshot => {
         const data = snapshot.val();
         if (!data) {
-          // É o Criador / Host
           isHost = true;
           roomRef.set({
             host: playerName,
@@ -195,7 +193,6 @@
             players: { [playerName]: { totalScore: 0 } }
           });
         } else {
-          // Jogador entrando
           isHost = (data.host === playerName);
           roomRef.child('players/' + playerName).update({ totalScore: 0 });
         }
@@ -209,13 +206,12 @@
         const data = snapshot.val();
         if (!data) return;
 
-        // Atualiza Lista de Jogadores na sala de espera
         const players = data.players || {};
         const playerListDiv = document.getElementById('player-list');
         playerListDiv.innerHTML = "<strong>Jogadores na sala:</strong><br>" + 
           Object.keys(players).map(p => `• ${p} ${p === data.host ? '(Host)' : ''}`).join('<br>');
 
-        // Exibe controles do Host
+        // Libera o botão de inicio para o Host independente de haver 1 ou mais jogadores
         if (isHost && data.status === 'waiting') {
           document.getElementById('btn-start-game').style.display = 'block';
           document.getElementById('host-msg').style.display = 'none';
@@ -224,7 +220,6 @@
           document.getElementById('host-msg').style.display = 'block';
         }
 
-        // Se o jogo começou
         if (data.status === 'playing') {
           document.getElementById('lobby-overlay').style.display = 'none';
           document.getElementById('hud-info').style.display = 'block';
@@ -235,7 +230,7 @@
             loadRoundData(data);
           }
 
-          // Checa se todos enviaram palpite
+          // Verifica se TODOS os jogadores atualmente conectados enviaram palpite
           const playerKeys = Object.keys(players);
           let allSubmitted = playerKeys.length > 0 && playerKeys.every(k => players[k][`r${currentRound}_score`] !== undefined);
           
@@ -249,7 +244,6 @@
     function startGameHost() {
       if (!isHost) return;
       
-      // Sorteia locais para as 8 rodadas
       const shuffled = [...verifiedLocations].sort(() => 0.5 - Math.random());
       const selectedRounds = shuffled.slice(0, 8);
 
@@ -269,7 +263,6 @@
 
       currentLocation = data.roundsData[currentRound - 1];
 
-      // Carrega o iframe com parâmetros otimizados e fallback automático
       const iframe = document.getElementById('street-view-container');
       iframe.src = `https://maps.google.com/maps?q=&layer=c&cbll=${currentLocation.lat},${currentLocation.lng}&cbp=12,0,0,0,0&output=svembed`;
 
@@ -287,7 +280,7 @@
       clearInterval(timerInterval);
       timerInterval = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const timeLeft = Math.max(0, 120 - elapsed); // 2 minutos (120s)
+        const timeLeft = Math.max(0, 120 - elapsed);
         document.getElementById('timer-count').innerText = timeLeft;
 
         if (timeLeft <= 0) {
@@ -338,7 +331,6 @@
       const dist = guessedCoords ? calculateDistance(currentLocation.lat, currentLocation.lng, lat, lng) : 20000;
       const score = guessedCoords ? calculateScore(dist) : 0;
 
-      // Salva a pontuação da rodada e atualiza o total acumulado
       roomRef.child('players/' + playerName).once('value', snapshot => {
         const pData = snapshot.val() || {};
         const newTotal = (pData.totalScore || 0) + score;
@@ -382,7 +374,6 @@
       });
 
       if (roundNum >= 8) {
-        // Fim de jogo após 8 rodadas
         let champName = "";
         let maxTotal = -1;
         Object.keys(players).forEach(pName => {
